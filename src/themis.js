@@ -608,8 +608,223 @@ var Utils = {
 
   pre_transform: {
 
-  }
+  },
 
+  build_schema_validator: function(options) {
+    $schema = require("./draftv4/schema.json");
+
+    if (options.simple_ids) {
+      delete $schema.allOf[0].properties.id.format;
+    }
+
+    if (options.force_additional) {
+      $schema.allOf.push({
+        oneOf: [
+          {
+            type: "object",
+            required: ["additionalProperties"],
+            properties: {
+              type: {
+                enum: ["object"]
+              },
+            }
+          },
+          {
+            type: "object",
+            required: ["additionalItems"],
+            properties: {
+              type: {
+                enum: ["array"]
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["boolean", "integer", "null", "number", "string"]
+              }
+            }
+          }
+        ]
+      });
+    }
+
+    if (options.force_items) {
+      $schema.allOf.push({
+        oneOf: [
+          {
+            type: "object",
+            required: ["items"],
+            properties: {
+              type: {
+                enum: ["array"]
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["object", "boolean", "integer", "null", "number", "string"]
+              }
+            }
+          }
+        ]
+      });
+    }
+
+    if (options.force_max_length) {
+      $schema.allOf.push({
+        oneOf: [
+          {
+            type: "object",
+            required: ["maxLength"],
+            properties: {
+              type: {
+                enum: ["string"]
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["array", "object", "boolean", "integer", "null", "number"]
+              }
+            }
+          }
+        ]
+      });
+    }
+
+    if (options.force_properties) {
+      $schema.allOf.push({
+        anyOf: [
+          {
+            type: "object",
+            required: ["properties"],
+            properties: {
+              type: {
+                enum: ["object"]
+              }
+            }
+          },
+          {
+            type: "object",
+            required: ["patternProperties"],
+            properties: {
+              type: {
+                enum: ["object"]
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["array", "boolean", "integer", "null", "number", "string"]
+              }
+            }
+          }
+        ]
+      });
+    }
+
+    if (options.no_extra_keywords) {
+      $schema.allOf[0].additionalProperties = false;
+    }
+
+    if (options.no_typeless) {
+      $schema.allOf.push({
+        type: "object",
+        required: ["type"]
+      });
+    }
+
+    if (options.no_empty_strings) {
+      $schema.allOf.push({
+        oneOf: [
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["string"]
+              },
+              minLength: {
+                default: 1
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["array", "object", "boolean", "integer", "null", "number"]
+              }
+            }
+          }
+        ]
+      });
+    }
+
+    if (options.no_empty_arrays) {
+      $schema.allOf.push({
+        oneOf: [
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["array"]
+              },
+              minItems: {
+                default: 1
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["string", "object", "boolean", "integer", "null", "number"]
+              }
+            }
+          }
+        ]
+      });
+    }
+
+    if (options.assume_additional !== undefined) {
+      $schema.allOf.push({
+        oneOf: [
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["object"]
+              },
+              additionalProperties: {
+                default: options.assume_additional
+              }
+            }
+          },
+          {
+            type: "object",
+            properties: {
+              type: {
+                enum: ["array", "string", "boolean", "integer", "null", "number"]
+              }
+            }
+          }
+        ]
+      });
+    }
+    return module.exports.validator($schema, {
+      enable_defaults: true,
+      validate_schemas: false,
+      errors: { messages: false, schema: false, validator_value: true }
+    });
+  }
 };
 
 var buildError = function (error_code, schema, schema_path, relative_schema_path, validator, validator_value, params, options, build_context) {
@@ -2174,215 +2389,7 @@ module.exports = {
     if (options.validate_schemas) {
 
       if (schema_validator === null) {
-        $schema = require("./draftv4/schema.json");
-
-        if (options.simple_ids) {
-          delete $schema.allOf[0].properties.id.format;
-        }
-
-        if (options.force_additional) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                required: ["additionalProperties"],
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  },
-                }
-              },
-              {
-                type: "object",
-                required: ["additionalItems"],
-                properties: {
-                  type: {
-                    enum: ["array"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["boolean", "integer", "null", "number", "string"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.force_items) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                required: ["items"],
-                properties: {
-                  type: {
-                    enum: ["array"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["object", "boolean", "integer", "null", "number", "string"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.force_max_length) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                required: ["maxLength"],
-                properties: {
-                  type: {
-                    enum: ["string"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "object", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.force_properties) {
-          $schema.allOf.push({
-            anyOf: [
-              {
-                type: "object",
-                required: ["properties"],
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                required: ["patternProperties"],
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "boolean", "integer", "null", "number", "string"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.no_extra_keywords) {
-          $schema.allOf[0].additionalProperties = false;
-        }
-
-        if (options.no_typeless) {
-          $schema.allOf.push({
-            type: "object",
-            required: ["type"]
-          });
-        }
-
-        if (options.no_empty_strings) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["string"]
-                  },
-                  minLength: {
-                    default: 1
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "object", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.no_empty_arrays) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array"]
-                  },
-                  minItems: {
-                    default: 1
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["string", "object", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.assume_additional !== undefined) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  },
-                  additionalProperties: {
-                    default: options.assume_additional
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "string", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-        schema_validator = this.validator($schema, { enable_defaults: true, validate_schemas: false, errors: { messages: false, schema: false, validator_value: true } });
+        schema_validator = Utils.build_schema_validator(options);
       }
 
       for (var index = 0; index < schemas.length; index++) {
@@ -2447,215 +2454,7 @@ module.exports = {
     if (options.validate_schemas) {
 
       if (schema_validator === null) {
-        $schema = require("./draftv4/schema.json");
-
-        if (options.simple_ids) {
-          delete $schema.allOf[0].properties.id.format;
-        }
-
-        if (options.force_additional) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                required: ["additionalProperties"],
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  },
-                }
-              },
-              {
-                type: "object",
-                required: ["additionalItems"],
-                properties: {
-                  type: {
-                    enum: ["array"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["boolean", "integer", "null", "number", "string"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.force_items) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                required: ["items"],
-                properties: {
-                  type: {
-                    enum: ["array"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["object", "boolean", "integer", "null", "number", "string"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.force_max_length) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                required: ["maxLength"],
-                properties: {
-                  type: {
-                    enum: ["string"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "object", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.force_properties) {
-          $schema.allOf.push({
-            anyOf: [
-              {
-                type: "object",
-                required: ["properties"],
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                required: ["patternProperties"],
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "boolean", "integer", "null", "number", "string"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.no_extra_keywords) {
-          $schema.allOf[0].additionalProperties = false;
-        }
-
-        if (options.no_typeless) {
-          $schema.allOf.push({
-            type: "object",
-            required: ["type"]
-          });
-        }
-
-        if (options.no_empty_strings) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["string"]
-                  },
-                  minLength: {
-                    default: 1
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "object", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.no_empty_arrays) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array"]
-                  },
-                  minItems: {
-                    default: 1
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["string", "object", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-
-        if (options.assume_additional !== undefined) {
-          $schema.allOf.push({
-            oneOf: [
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["object"]
-                  },
-                  additionalProperties: {
-                    default: options.assume_additional
-                  }
-                }
-              },
-              {
-                type: "object",
-                properties: {
-                  type: {
-                    enum: ["array", "string", "boolean", "integer", "null", "number"]
-                  }
-                }
-              }
-            ]
-          });
-        }
-        schema_validator = this.validator($schema, { enable_defaults: true, validate_schemas: false, errors: { messages: false, schema: false, validator_value: true } });
+        schema_validator = Utils.build_schema_validator(options);
       }
 
       for (var index = 0; index < schemas.length; index++) {
